@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git & GitHub – Renombrado correcto de archivos</title>
+
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<input type="checkbox" id="toggle-menu" hidden>
+
+<aside class="side-nav">
+  <label for="toggle-menu" class="menu-toggle">☰</label>
+  <h3>Soluciones Git</h3>
+  
+  <nav>
+    <div style="margin: 1rem 0 0.5rem 0.75rem; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;">
+      Fundamentos
+    </div>
+    <a href="#caso-1">Renombrar un archivo</a>
+    
+    <div style="margin: 1.5rem 0 0.5rem 0.75rem; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;">
+      Normalización
+    </div>
+    <a href="#caso-2">Primera letra a minúscula</a>
+    <a href="#caso-3">Todo en minúscula</a>
+    <a href="#caso-4">Espacios y puntos</a>
+    <a href="#caso-5">Caracteres especiales</a>
+    
+    <div style="margin: 1.5rem 0 0.5rem 0.75rem; font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">
+      Avanzado
+    </div>
+    <a href="#caso-6">Normalización total</a>
+  </nav>
+</aside>
+
+
+<main>
+  <h1>Renombrar archivos en Git sin errores</h1>
+  <p>Casos reales y soluciones correctas para que GitHub detecte los cambios.</p>
+<section id="caso-1">
+  <h2>Caso 1 — Renombrar un archivo individual</h2>
+  <p class="step">Soluciona cambios simples de nombre que GitHub no detecta.</p>
+
+  <p class="step">1️⃣ Abrir la terminal en el repo</p>
+  <div class="terminal"><div class="cmd">Git Bash o terminal de VS Code</div></div>
+
+  <p class="step">2️⃣ Renombrar usando git mv</p>
+  <div class="terminal"><div class="cmd">git mv "Imagen Final.PNG" "imagen-final.png"</div></div>
+
+  <p class="step">👉 Nunca renombres desde el explorador o el editor.</p>
+
+  <p class="step">3️⃣ Commit y push</p>
+  <div class="terminal">
+    <div class="cmd">git status</div>
+    <div class="cmd">git commit -m "Renombrar archivo imagen-final.png"</div>
+    <div class="cmd">git push</div>
+  </div>
+</section>
+
+<section id="caso-2">
+  <h2>Caso 2 — Convertir solo la primera letra a minúscula</h2>
+
+  <p class="step">
+    Este caso resuelve un problema muy común: archivos cuyo nombre comienza con una letra
+    mayúscula (<code>Imagen.png</code>) y deben normalizarse a minúscula
+    (<code>imagen.png</code>) sin modificar el resto del nombre.
+  </p>
+
+  <p class="step">
+    La solución recorre todos los archivos <strong>trackeados por Git</strong> (incluyendo
+    subcarpetas) y solo renombra aquellos cuyo <strong>primer carácter es una letra A–Z</strong>.
+    Archivos que empiezan con números u otros símbolos no se modifican.
+  </p>
+
+  <p class="step">1️⃣ Ejecutar el script desde la raíz del proyecto</p>
+
+  <div class="terminal">
+    <div class="cmd">git ls-files | while read file; do</div>
+    <div class="cmd">base=$(basename "$file")</div>
+    <div class="cmd">dir=$(dirname "$file")</div>
+    <div class="cmd">first_char="${base:0:1}"</div>
+    <div class="cmd">rest="${base:1}"</div>
+    <div class="cmd">if [[ "$first_char" =~ [A-Z] ]]; then</div>
+    <div class="cmd">git mv "$file" "$dir/$(echo "$first_char" | tr 'A-Z' 'a-z')$rest"</div>
+    <div class="cmd">fi</div>
+    <div class="cmd">done</div>
+  </div>
+
+  <p class="step">
+    ✔ Usa <code>git mv</code>, por lo que Git registra correctamente el cambio incluso en
+    sistemas Windows (case-insensitive).<br>
+    ✔ No toca archivos que ya cumplen la convención.<br>
+    ✔ No modifica carpetas manualmente ni archivos no trackeados.
+  </p>
+
+  <p class="step">2️⃣ Verificar los cambios y subirlos al repositorio remoto</p>
+
+  <div class="terminal">
+    <div class="cmd">git status</div>
+    <div class="cmd">git commit -m "Rename files to lowercase first letter"</div>
+    <div class="cmd">git push</div>
+  </div>
+
+  <p class="step">
+    A partir de este punto, GitHub reflejará correctamente los renombres y evitarás errores
+    en entornos Linux o despliegues en producción.
+  </p>
+</section>
+
+<section id="caso-3">
+  <h2>Caso 3 — Todo el nombre a minúscula</h2>
+
+  <p class="step">
+    Este caso convierte <strong>todo el nombre del archivo a minúsculas</strong>, sin modificar
+    espacios, guiones, puntos ni extensiones.  
+    Afecta archivos en la raíz y en todas las subcarpetas del proyecto.
+  </p>
+
+  <p class="step">
+    Es útil cuando Git no detecta cambios en sistemas case-insensitive (Windows / macOS)
+    o cuando el proyecto tiene una mezcla inconsistente de mayúsculas y minúsculas.
+  </p>
+
+  <p class="step">1️⃣ Abrir la terminal en la raíz del proyecto</p>
+  <p class="step">
+    Asegurate de estar parado en el directorio donde está el repositorio Git
+    (donde existe la carpeta <code>.git</code>).
+  </p>
+
+  <p class="step">2️⃣ Ejecutar el script de normalización</p>
+  <p class="step">
+    Este script recorre todos los archivos versionados por Git, detecta si el nombre
+    contiene mayúsculas y, si es así, lo renombra completamente a minúsculas usando
+    <code>git mv</code> (imprescindible para que Git registre el cambio).
+  </p>
+
+  <div class="terminal">
+    <div class="cmd">git ls-files | while read file; do</div>
+    <div class="cmd">  dir=$(dirname "$file")</div>
+    <div class="cmd">  base=$(basename "$file")</div>
+    <div class="cmd">  lower=$(echo "$base" | tr '[:upper:]' '[:lower:]')</div>
+    <div class="cmd">  [ "$base" != "$lower" ] && git mv "$file" "$dir/$lower"</div>
+    <div class="cmd">done</div>
+  </div>
+
+  <p class="step">
+    🔎 Qué hace cada parte:
+  </p>
+  <ul class="step">
+    <li><code>git ls-files</code>: lista solo archivos controlados por Git.</li>
+    <li><code>dirname</code> / <code>basename</code>: separan carpeta y nombre.</li>
+    <li><code>tr</code>: convierte todo el nombre a minúsculas.</li>
+    <li><code>git mv</code>: registra correctamente el cambio para Git.</li>
+  </ul>
+
+  <p class="step">3️⃣ Verificar los cambios antes de confirmar</p>
+  <div class="terminal">
+    <div class="cmd">git status</div>
+  </div>
+
+  <p class="step">
+    Deberías ver los archivos renombrados como <em>modified / renamed</em>.
+    Si no aparece nada, significa que ya estaban en minúsculas.
+  </p>
+
+  <p class="step">4️⃣ Confirmar los cambios</p>
+  <div class="terminal">
+    <div class="cmd">git commit -m "Renombrar todos los archivos a minúsculas"</div>
+  </div>
+
+  <p class="step">5️⃣ Subir los cambios a GitHub</p>
+  <div class="terminal">
+    <div class="cmd">git push</div>
+  </div>
+
+  <p class="step">
+    A partir de este punto, GitHub detecta correctamente los renombrados
+    y el repositorio queda normalizado.
+  </p>
+</section>
+
+
+<section id="caso-4">
+  <h2>Caso 4 — Espacios y puntos</h2>
+
+  <p class="step">
+    Este caso reemplaza <strong>espacios y puntos internos</strong> por guiones (<code>-</code>),
+    <strong>sin modificar la extensión del archivo</strong>.
+    Funciona en la raíz y en todas las subcarpetas del proyecto.
+  </p>
+
+  <p class="step">
+    Ejemplos de resultado:
+  </p>
+  <ul class="step">
+    <li><code>mi imagen.final.png</code> → <code>mi-imagen-final.png</code></li>
+    <li><code>banner.home.page.jpg</code> → <code>banner-home-page.jpg</code></li>
+    <li><code>archivo con espacios.txt</code> → <code>archivo-con-espacios.txt</code></li>
+  </ul>
+
+  <p class="step">
+    El último punto (el de la extensión) <strong>no se toca</strong>.
+  </p>
+
+  <p class="step">1️⃣ Abrir la terminal en la raíz del proyecto</p>
+  <p class="step">
+    Debés estar ubicado en el directorio donde se encuentra el repositorio Git
+    (donde existe la carpeta <code>.git</code>).
+  </p>
+
+  <p class="step">2️⃣ Ejecutar el script de reemplazo</p>
+  <p class="step">
+    El script recorre todos los archivos versionados, separa el nombre de la extensión
+    y solo aplica los cambios sobre el nombre.
+  </p>
+
+  <div class="terminal">
+    <div class="cmd">git ls-files | while read file; do</div>
+    <div class="cmd">  dir=$(dirname "$file")</div>
+    <div class="cmd">  base=$(basename "$file")</div>
+    <div class="cmd">  name="${base%.*}"</div>
+    <div class="cmd">  ext="${base##*.}"</div>
+    <div class="cmd">  git mv "$file" "$dir/$(echo "$name" | tr ' .' '-')".$ext</div>
+    <div class="cmd">done</div>
+  </div>
+
+  <p class="step">
+    🔎 Qué hace cada parte:
+  </p>
+  <ul class="step">
+    <li><code>${base%.*}</code>: obtiene el nombre del archivo sin la extensión.</li>
+    <li><code>${base##*.}</code>: obtiene únicamente la extensión.</li>
+    <li><code>tr ' .'-</code>: reemplaza espacios y puntos por guiones.</li>
+    <li><code>git mv</code>: asegura que Git registre correctamente el cambio.</li>
+  </ul>
+
+  <p class="step">
+    ⚠️ Importante: este script no valida colisiones de nombres.
+    Si dos archivos resultan con el mismo nombre final, Git mostrará un error.
+  </p>
+
+  <p class="step">3️⃣ Verificar los cambios</p>
+  <div class="terminal">
+    <div class="cmd">git status</div>
+  </div>
+
+  <p class="step">
+    Revisá que los renombrados sean correctos antes de confirmar.
+  </p>
+
+  <p class="step">4️⃣ Confirmar los cambios</p>
+  <div class="terminal">
+    <div class="cmd">git commit -m "Reemplazar espacios y puntos por guiones en archivos"</div>
+  </div>
+
+  <p class="step">5️⃣ Subir los cambios a GitHub</p>
+  <div class="terminal">
+    <div class="cmd">git push</div>
+  </div>
+
+  <p class="step">
+    GitHub ahora detecta correctamente los cambios de nombre en todos los archivos.
+  </p>
+</section>
+
+
+<section id="caso-5">
+  <h2>Caso 5 — Caracteres especiales y acentos</h2>
+
+  <p class="step">
+    Este caso convierte los nombres de archivo en <strong>nombres seguros y normalizados</strong>,
+    eliminando caracteres especiales, acentos, símbolos y letras problemáticas.
+    También pasa todo a minúscula y reemplaza separadores por guiones.
+  </p>
+
+  <p class="step">
+    Es el caso más completo y recomendado para proyectos web.
+  </p>
+
+  <p class="step">Ejemplos de resultado:</p>
+  <ul class="step">
+    <li><code>imagen (1).png</code> → <code>imagen-1.png</code></li>
+    <li><code>Esta es mi imagen + ñandú.png</code> → <code>esta-es-mi-imagen-niandu.png</code></li>
+    <li><code>Fondo@Home#FINAL!!.jpg</code> → <code>fondo-home-final.jpg</code></li>
+  </ul>
+
+  <p class="step">
+    ⚠️ La extensión del archivo <strong>no se modifica</strong>.
+  </p>
+
+  <p class="step">1️⃣ Abrir la terminal en la raíz del proyecto</p>
+  <p class="step">
+    Asegurate de estar dentro del repositorio Git (donde existe la carpeta <code>.git</code>).
+  </p>
+
+  <p class="step">2️⃣ Ejecutar el script de limpieza</p>
+  <p class="step">
+    El script recorre todos los archivos versionados, limpia el nombre y usa
+    <code>git mv</code> para que Git registre correctamente cada cambio.
+  </p>
+
+  <div class="terminal">
+    <div class="cmd">git ls-files | while read file; do</div>
+    <div class="cmd">  dir=$(dirname "$file")</div>
+    <div class="cmd">  base=$(basename "$file")</div>
+    <div class="cmd">  name="${base%.*}"</div>
+    <div class="cmd">  ext="${base##*.}"</div>
+    <div class="cmd">  clean=$(echo "$name" | iconv -f UTF-8 -t ASCII//TRANSLIT | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g')</div>
+    <div class="cmd">  git mv "$file" "$dir/$clean.$ext"</div>
+    <div class="cmd">done</div>
+  </div>
+
+  <p class="step">🔎 Qué hace exactamente el script:</p>
+  <ul class="step">
+    <li><code>iconv ... TRANSLIT</code>: elimina acentos y convierte <code>ñ</code> → <code>n</code>, <code>á</code> → <code>a</code>, etc.</li>
+    <li><code>tr '[:upper:]' '[:lower:]'</code>: pasa todo el nombre a minúscula.</li>
+    <li><code>sed 's/[^a-z0-9]+/-/g'</code>: reemplaza cualquier símbolo, espacio o carácter raro por <code>-</code>.</li>
+    <li><code>git mv</code>: garantiza que GitHub detecte el renombrado.</li>
+  </ul>
+
+  <p class="step">
+    ⚠️ Este script <strong>no maneja colisiones de nombres</strong>.
+    Si dos archivos generan el mismo nombre final, Git abortará el renombrado.
+  </p>
+
+  <p class="step">3️⃣ Revisar los cambios antes de confirmar</p>
+  <div class="terminal">
+    <div class="cmd">git status</div>
+  </div>
+
+  <p class="step">
+    Verificá que los nombres generados sean los esperados.
+  </p>
+
+  <p class="step">4️⃣ Confirmar los cambios</p>
+  <div class="terminal">
+    <div class="cmd">git commit -m "Normalizar nombres de archivos y eliminar caracteres especiales"</div>
+  </div>
+
+  <p class="step">5️⃣ Subir los cambios a GitHub</p>
+  <div class="terminal">
+    <div class="cmd">git push</div>
+  </div>
+
+  <p class="step">
+    A partir de este punto, los archivos tienen nombres seguros, consistentes
+    y compatibles con cualquier entorno.
+  </p>
+</section>
+
+
+<section id="caso-6">
+  <h2>Caso 6 — Normalización total (producción)</h2>
+  <p class="step">Solución definitiva para repos reales.</p>
+
+  <p class="step">Ejecutar desde la raíz del proyecto (Git Bash):</p>
+
+  <div class="terminal">
+    <div class="cmd">git ls-files | while read file; do</div>
+    <div class="cmd">  dir=$(dirname "$file")</div>
+    <div class="cmd">  base=$(basename "$file")</div>
+    <div class="cmd"></div>
+    <div class="cmd">  name="${base%.*}"</div>
+    <div class="cmd">  ext="${base##*.}"</div>
+    <div class="cmd"></div>
+    <div class="cmd">  clean=$(echo "$name" \</div>
+    <div class="cmd">    | iconv -f UTF-8 -t ASCII//TRANSLIT \</div>
+    <div class="cmd">    | tr '[:upper:]' '[:lower:]' \</div>
+    <div class="cmd">    | sed -E 's/[[:space:]]+/-/g' \</div>
+    <div class="cmd">    | sed -E 's/\./-/g' \</div>
+    <div class="cmd">    | sed -E 's/[^a-z0-9\-]+//g' \</div>
+    <div class="cmd">    | sed -E 's/-+/-/g' \</div>
+    <div class="cmd">    | sed -E 's/^-|-$//g')</div>
+    <div class="cmd"></div>
+    <div class="cmd">  new_base="$clean.$ext"</div>
+    <div class="cmd">  target="$dir/$new_base"</div>
+    <div class="cmd"></div>
+    <div class="cmd">  [ "$file" = "$target" ] && continue</div>
+    <div class="cmd"></div>
+    <div class="cmd">  i=1</div>
+    <div class="cmd">  while git ls-files --error-unmatch "$target" >/dev/null 2>&1; do</div>
+    <div class="cmd">    target="$dir/$clean-$i.$ext"</div>
+    <div class="cmd">    i=$((i+1))</div>
+    <div class="cmd">  done</div>
+    <div class="cmd"></div>
+    <div class="cmd">  git mv "$file" "$target"</div>
+    <div class="cmd">done</div>
+  </div>
+
+  <p class="step">Ejemplos reales:</p>
+  <div class="terminal">
+    <div class="cmd">Esta es mi imagen + ñandú (1).PNG → esta-es-mi-imagen-nandu-1.png</div>
+    <div class="cmd">mi.primer.archivo.final.v2.JPG → mi-primer-archivo-final-v2.jpg</div>
+    <div class="cmd">imagen1.png + imagen (1).png → imagen1.png + imagen1-1.png</div>
+  </div>
+
+  <p class="step">Luego:</p>
+  <div class="terminal">
+    <div class="cmd">git status</div>
+    <div class="cmd">git commit -m "Normalizar nombres de archivos del proyecto"</div>
+    <div class="cmd">git push</div>
+  </div>
+</section>
+
+
+</main>
+
+<footer>
+  Hecho para Git real. Sin hacks. Sin errores invisibles.<br>
+  <a href="https://git-scm.com/cheat-sheet" target="_blank" rel="noopener noreferrer">
+    Git Cheat Sheet oficial
+  </a>
+</footer>
+
+
+</body>
+</html>
