@@ -1,3 +1,17 @@
+import admin from 'firebase-admin'
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }),
+  })
+}
+
+const db = admin.firestore()
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -5,15 +19,15 @@ export default async function handler(req, res) {
 
   const { name, type, message } = req.body
 
-  if (!type || !message) {
+  if (!name || !message) {
     return res.status(400).json({ error: 'Missing fields' })
   }
 
-  console.log({
-    name: name || 'Anónimo',
-    type,
+  await db.collection('messages').add({
+    name,
+    type: type || 'pregunta',
     message,
-    date: new Date().toISOString()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
   })
 
   return res.status(200).json({ ok: true })
